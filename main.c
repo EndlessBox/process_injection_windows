@@ -27,9 +27,6 @@ int		main(int argc, char** argv) {
 
 	printf("HProcess : 0x%p\nVMPointer : 0x%p\n", currentProcessesList->choosenProcess->HProcess, currentProcessesList->choosenProcess->VMPointer);
 
-	currentProcessesList->choosenProcess->dataWritten = 0;
-	currentProcessesList->choosenProcess->wasDelivered = FALSE;
-
 	if (populateProcessMemory(payload, payloadSize, currentProcessesList->choosenProcess))
 		return EXIT_FAILURE;
 	
