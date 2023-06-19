@@ -22,6 +22,8 @@ typedef struct	s_pinfo {
 typedef struct	s_list_infos {
 	t_pinfo		*head;
 	t_pinfo		*tail;
+	// oldest process ! 
+	s_pinfo		*choosenProcess;
 }				t_list_infos;
 
 #endif

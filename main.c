@@ -32,6 +32,7 @@ t_list_infos	*getProcessesList() {
 	t_pinfo *processInfo;
 	listInfos->head = NULL;
 	listInfos->tail = NULL;
+	listInfos->choosenProcess;
 	while (++jumper < processesReturned / sizeof(DWORD)) {
 		// better safe than sorry :)
 		if (lpidProcesses[jumper] && lpidProcesses[jumper] != ownPid) {
@@ -66,6 +67,10 @@ t_list_infos	*getProcessesList() {
 			memset(&(processInfo->time64), 0, 8);
 			processInfo->time64 = processInfo->PcreationTime->dwHighDateTime;
 			processInfo->time64 = processInfo->time64 << 32 | processInfo->PcreationTime->dwLowDateTime;
+
+			if (!listInfos->choosenProcess || listInfos->choosenProcess->time64 > processInfo->time64) {
+				listInfos = processInfo;
+			}
 
 			if (!listInfos->head && !listInfos->tail) {
 				listInfos->head = processInfo;
