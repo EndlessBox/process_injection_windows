@@ -63,6 +63,7 @@ t_list_infos	*getProcessesList() {
 			processInfo->pid = lpidProcesses[jumper];
 			processInfo->HProcess = HProcess;
 			processInfo->next = NULL;
+			memset(&(processInfo->time64, 0, 8));
 			processInfo->time64 = processInfo->PcreationTime->dwHighDateTime;
 			processInfo->time64 = processInfo->time64 << 32 | processInfo->PcreationTime->dwLowDateTime;
 
