@@ -10,6 +10,10 @@
 typedef struct	s_pinfo {
 	DWORD			pid;
 	HANDLE			HProcess;
+	FILETIME		PCreationTime;
+	FILETIME		PExitTime;
+	FILETIME		PKernelTime;
+	FILETIME		PUserTime;
 	struct s_pinfo	*next;
 }				t_pinfo;
 

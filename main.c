@@ -37,9 +37,29 @@ t_list_infos	*getProcessesList() {
 		if (lpidProcesses[jumper] && lpidProcesses[jumper] != ownPid) {
 			HANDLE HProcess;
 
-			if (!(HProcess = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_VM_WRITE|PROCESS_VM_OPERATION, FALSE, lpidProcesses[jumper])))
+			if (!(HProcess = OpenProcess(
+					PROCESS_CREATE_THREAD|
+					PROCESS_VM_WRITE|
+					PROCESS_VM_OPERATION|
+					PROCESS_QUERY_INFORMATION,
+					FALSE,
+					lpidProcesses[jumper]
+				)))
 				continue;
 			processInfo = (t_pinfo*)malloc(sizeof(t_pinfo));
+
+			// timings to use a process that was up for a long time, that might be a good condidat for injecting, cause it might stay up for a long moment.
+			if(!(GetProcessTimes(
+					Hprocess,
+					&(processInfo->PCreationTime),
+					&(processInfo->PExitTime),
+					&(processInfo->PKernelTime),
+					&(processInfo->PUserTime)
+				))) {
+				free(processInfo);
+				printf("Couldn't get process %d times, Error: %lx", lpidProcesses[jumper], GetLastError());
+				continue;
+			}
 			processInfo->pid = lpidProcesses[jumper];
 			processInfo->HProcess = HProcess;
 			processInfo->next = NULL;
