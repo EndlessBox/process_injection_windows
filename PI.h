@@ -16,6 +16,11 @@ typedef struct	s_pinfo {
 	FILETIME		PUserTime;
 	// number of 100-nanosecond elapsed since 12:00 A.M. January 1, 1601
 	long long int	time64;
+	LPVOID			VMPointer;
+	SIZE_T			dataWritten;
+	DWORD			dwThreadId;
+	HANDLE			HThread;
+	boolean			wasDelivered;
 	struct s_pinfo	*next;
 }				t_pinfo;
 

