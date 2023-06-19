@@ -14,6 +14,7 @@ typedef struct	s_pinfo {
 	FILETIME		PExitTime;
 	FILETIME		PKernelTime;
 	FILETIME		PUserTime;
+	long long int	time64;
 	struct s_pinfo	*next;
 }				t_pinfo;
 
