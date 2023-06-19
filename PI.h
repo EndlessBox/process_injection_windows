@@ -14,6 +14,7 @@ typedef struct	s_pinfo {
 	FILETIME		PExitTime;
 	FILETIME		PKernelTime;
 	FILETIME		PUserTime;
+	// number of 100-nanosecond elapsed since 12:00 A.M. January 1, 1601
 	long long int	time64;
 	struct s_pinfo	*next;
 }				t_pinfo;
